@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "2fa-otp"
+version = "0.1.0"
+description = "2FA OTP"
+authors = ["Jason CM"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Django = "^5.2"
+djangorestframework = "^3.15.2"
+djangorestframework-simplejwt = "^5.3.1"
+django-extensions = "^3.2.3"
+django-constance = "^4.1.3"
+psycopg2-binary = "^2.9.10"
+drf-spectacular = "^0.27.2"
+pyotp = "^2.9.0"
+django-environ = "^0.11.2"
+gunicorn = "^23.0.0"
+django-cors-headers = "^4.6.0"
+
+[tool.poetry.group.dev.dependencies]
+factory-boy = "^3.3.1"
+ipython = "^8.29.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
