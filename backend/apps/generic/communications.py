@@ -69,7 +69,7 @@ class Communication:
         body = loader.render_to_string(body_template_name, context)
         return self.send_email(subject, body, to=[user.email])
 
-    def send_otp_email(self, user, otp_code):
+    def send_otp_email(self, user, otp_code, expiration_minutes: int = 4):
         """ Send an email to create a new bucket. """
 
         subject_template_name = 'email_otp_subject.txt'
@@ -80,7 +80,7 @@ class Communication:
         context = {
             'user': user,
             'otp_code': otp_code,
-            'expiration_minutes': constance_config.OTP_EXPIRE_MINUTES
+            'expiration_minutes': expiration_minutes
         }
         body = loader.render_to_string(body_template_name, context)
         return self.send_email(subject, body, to=[user.email])

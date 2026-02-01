@@ -1,8 +1,8 @@
-name: otp_2fa
+name: dj_otp_2fa
 
 services:
   backend:
-    container_name: "otp_2fa_backend"
+    container_name: "dj_otp_2fa_backend"
     depends_on:
       mailpit:
         condition: service_healthy
@@ -28,12 +28,12 @@ services:
         target: /app/
         read_only: false
     expose:
-      - "8000:8000"
+      - 8000
     ports:
       - "8000:8000"
 
   db:
-    container_name: "otp_2fa_db"
+    container_name: "dj_otp_2fa_db"
     image: postgres:17
     command:
       # - "--autovacuum=on"
@@ -42,12 +42,12 @@ services:
       # - "--ssl_min_protocol_version=TLSv1.2"
       - "--pgaudit.log=ddl"
     restart: no
-#    environment:
+    environment:
       # - POSTGRES_INITDB_ARGS=
-#      - POSTGRES_EXTENSIONS=pg_audit
-#      - POSTGRES_USER=postgres
-#      - POSTGRES_PASSWORD=postgres
-#      - POSTGRES_DB=postgres
+      - POSTGRES_EXTENSIONS=pg_audit
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
     ports:
       - "5432:5432"
     healthcheck:
@@ -98,6 +98,7 @@ services:
         read_only: false
 
   web:
+    container_name: "dj_otp_2fa_web"
     restart: no
     build:
       context: ../frontend/
@@ -108,7 +109,7 @@ services:
     env_file:
       - ../frontend/.env
     expose:
-      - "8080:8080"
+      - 8080
     ports:
       - "8080:8080"
     volumes:

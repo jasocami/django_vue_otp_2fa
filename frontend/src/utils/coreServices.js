@@ -1,4 +1,4 @@
-import { getCookie } from '@/utils/cookieManager';
+import cookieManager from '@/utils/cookieManager';
 import apiClient from '@/utils/axiosConfig';
 import { API_BASE_URL, defaultHeaders } from '@/utils/apiConfig';
 
@@ -29,7 +29,7 @@ export function coreServices() {
       return apiClient.delete(this.createUrl(url), { headers: this.getRequestHeader() });
     },
     getRequestHeader() {
-      const accessToken = getCookie('accessToken');
+      const accessToken = cookieManager.get('accessToken');
       return defaultHeaders(accessToken);
     },
     getMultipartRequestHeader() {

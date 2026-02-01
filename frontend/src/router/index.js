@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore, useUsersStore } from '@/stores';
-import { getCookie } from "@/utils/cookieManager.js";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -30,9 +29,8 @@ async function checkPermission(to, from, next) {
 
   // Check that there is a token
   const authStore = useAuthStore();
-  console.log('R1');
-  const a_token = authStore.accessToken; // getCookie('accessToken');
-  console.log('R2', a_token);
+  const a_token = authStore.getAccessToken;
+  console.log('a_token', a_token);
   if (!a_token) {
     return next({ name: 'login' });
   }
@@ -41,11 +39,11 @@ async function checkPermission(to, from, next) {
   await userStore.getMe();
   // .then((response) => {
   //   console.log(response.data);
-  console.log('done1');
-  if (to.name !== 'verify_otp' && !userStore.user?.has_otp_verified) {
+  console.log('userStore.isOtpVerified', authStore.isOtpVerified);
+  if (to.name !== 'verify_otp' && !authStore.isOtpVerified) {
     next({ name: 'verify_otp' });
   }
-  else if (to.name === 'verify_otp' && userStore.user?.has_otp_verified) {
+  else if (to.name === 'verify_otp' && authStore.isOtpVerified) {
     next({ name: 'home' });
   }
   // }).catch((error) => {

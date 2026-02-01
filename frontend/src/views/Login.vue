@@ -15,7 +15,7 @@
             :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'" :type="visible ? 'text' : 'password'"
             prepend-inner-icon="mdi-lock" variant="underlined" label="Password" v-model="password"
             placeholder="Password" required :rules="passwordRules" @click:append-inner="toggleVisibility"
-            @keyup.enter="login"></v-text-field>
+            @keyup.enter="login"/>
           <v-btn class="mt-5 login-button" color="primary" block rounded="lg" size="large" variant="outlined"
           @click="login" :disabled="formValid">
             Sign In
@@ -34,7 +34,7 @@
 <script setup>
   import { ref, computed } from 'vue';
   import { useAuthStore, useGenericStore } from '@/stores';
-  import { getAccessTokenExpiration, getRefreshTokenExpiration, getCookie, setCookie, removeCookies } from '@/utils/cookieManager';
+  import cookieManager from '@/utils/cookieManager';
   import router from '@/router';
 
   const email = ref('');
@@ -60,7 +60,7 @@
   const authStore = useAuthStore();
 
   const login = async () => {
-    removeCookies();
+    cookieManager.deleteAll();
     const data = {
       email: email.value,
       password: password.value,

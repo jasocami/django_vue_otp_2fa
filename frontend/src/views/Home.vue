@@ -2,20 +2,18 @@
   <main>
     <v-container>
       <v-row>
-        <v-col>
+        <v-col cols="6">
           <h1>My info</h1>
           <br>
           <pre>
-            Me: {{ usersStore.user }}
+            Me: {{ usersStore }}
           </pre>
         </v-col>
-      </v-row>
-      <v-row>
-        <v-col>
+        <v-col cols="6">
           <h1>My info authStore</h1>
           <br>
           <pre>
-            Me: {{ authStore.user }}
+            Me: {{ authStore }}
           </pre>
         </v-col>
       </v-row>

@@ -1,3 +1,5 @@
+<script setup>
+</script>
 <template>
   <v-container>
     <v-row>
@@ -8,11 +10,21 @@
     <v-row>
       <v-col class="mt-5">
         <v-form>
-          <v-text-field class="mt-1" id="otp" prepend-inner-icon="mdi-account" label="OTP" v-model="otp"
-          placeholder="OTP" type="text" :rules="otpRules" required color="primary" variant="underlined">
-          </v-text-field>
-          <v-btn class="mt-5 login-button" color="primary" block rounded="lg" size="large" variant="outlined"
-          @click="verify">
+          <v-otp-input
+              v-model="otp"
+              length="6"
+              type="number"
+              :disabled="loading"
+              aria-label="Enter 6-digit verification code"
+            />
+<!--          <v-text-field-->
+<!--              class="mt-1" id="otp" prepend-inner-icon="mdi-account" label="OTP"-->
+<!--              v-model="otp"-->
+<!--              placeholder="OTP" type="text" :rules="otpRules" required color="primary"-->
+<!--              variant="underlined">-->
+<!--          </v-text-field>-->
+          <v-btn class="mt-5 login-button" color="primary" block rounded="lg" size="large"
+                 variant="outlined" @click="verify">
             Verify
           </v-btn>
         </v-form>

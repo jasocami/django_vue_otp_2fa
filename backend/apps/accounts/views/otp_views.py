@@ -10,7 +10,7 @@ from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.accounts.constants import OTPChoices
-from apps.accounts.models import OTP
+from apps.accounts.models import OTP, TrustedDevice
 from apps.accounts.serializers import OTPSerializer
 from apps.generic.api.api_exceptions import OTPCodeInvalidExpiredException
 from apps.generic.communications import Communication
@@ -51,10 +51,28 @@ class VerifyOtpAPIView(APIView):
     def post(self, request):
         serializer = OTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        otp_instance = get_object_or_404(request.user.otps.filter(otp_type=OTPChoices.LOGIN))
-        if not serializer.validate_otp_user(otp_instance):
+        otp_input = serializer.validated_data["otp_code"]
+        user = request.user
+
+        try:
+            otp_instance = user.otps.get(otp_type=OTPChoices.LOGIN, is_active=True)
+        except OTP.DoesNotExist:
+            # {"detail": "No active OTP found. Please login again."},
             raise OTPCodeInvalidExpiredException()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if otp_instance.is_expired():
+            # {"detail": "OTP has expired. Please request a new one."},
+            raise OTPCodeInvalidExpiredException()
+
+        if otp_instance.validate_otp(otp_input):
+            # Create trusted device so user won't need OTP for 24h
+            TrustedDevice.trust_device(user, request)
+            logger.info(f"Device trusted for user {user.email}")
+            # {"detail": "OTP verified successfully."},
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # {"detail": "Invalid OTP code."},
+        raise OTPCodeInvalidExpiredException()
 
 
 class OTPThrottle(UserRateThrottle):
@@ -78,8 +96,11 @@ class ReSendOTPAPIView(APIView):
 
     def post(self, request):
         user = request.user
-        otp_instance, _ = OTP.objects.get_or_create(user=user, otp_type=OTPChoices.LOGIN)
+        otp_instance, created = OTP.objects.get_or_create(
+            user=user,
+            otp_type=OTPChoices.LOGIN
+        )
         otp_instance.generate_otp()
-        otp_instance.save()
+
         Communication().send_otp_email(user, otp_instance.otp_code)
         return Response(status=status.HTTP_204_NO_CONTENT)

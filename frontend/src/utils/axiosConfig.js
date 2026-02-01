@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from '@/utils/apiConfig';
-import { getCookie } from '@/utils/cookieManager';
+import cookieManager from '@/utils/cookieManager';
 import router from '@/router';
 import { useAuthStore } from '@/stores';
 
@@ -18,7 +18,7 @@ function getCSRFToken() {
 
 apiClient.interceptors.request.use(
   (config) => {
-    const accessToken = getCookie('accessToken');
+    const accessToken = cookieManager.get('accessToken');
     // Add access token if exists
     if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;

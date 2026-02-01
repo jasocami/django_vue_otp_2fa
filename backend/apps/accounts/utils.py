@@ -5,4 +5,4 @@ from constance import config as constance_config
 
 
 def get_otp_expire_datetime():
-    return timezone.now() + timedelta(minutes=constance_config.OTP_EXPIRE_MINUTES)
+    return timezone.now() + timedelta(minutes=constance_config.OTP_CODE_EXPIRATION)

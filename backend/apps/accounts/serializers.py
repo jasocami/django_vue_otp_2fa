@@ -10,7 +10,7 @@ from rest_framework_simplejwt.settings import api_settings
 from apps.generic.api.api_exceptions import AuthenticationFailedException, NoActiveAccountException, \
     OTPCodeInvalidExpiredException
 from .constants import OTPChoices
-from .models import OTP
+from .models import OTP, TrustedDevice
 from ..generic.communications import Communication
 from ..generic.serializer_fields import custom_datetime_field
 from constance import config as constance_config
@@ -23,13 +23,13 @@ class UserSerializer(serializers.ModelSerializer):
     """ Extended info for a user model """
 
     date_joined = custom_datetime_field()
-    has_otp_verified = serializers.SerializerMethodField()
+    otp_verified = serializers.SerializerMethodField()
 
     class Meta:
         model = UserModel
         exclude = ('password', 'groups', 'user_permissions', 'last_login')
 
-    def get_has_otp_verified(self, obj):
+    def get_otp_verified(self, obj):
         return obj.has_otp_verified
 
 
@@ -59,13 +59,39 @@ class ObtainUserTokenSerializer(TokenObtainPairSerializer):
 
         data = {}
 
+        # if self.user.expiration_date is None or self.user.expiration_date < date.today():
+        #     # token = default_token_generator.make_token(self.user)
+        #     # Communication().send_update_expired_password_email(self.user, constance_config.FRONTEND_URL, token)
+        #     raise PasswordExpiredException()
+
         refresh = self.get_token(self.user)
 
         if constance_config.IS_TWO_FACTOR_AUTH_ACTIVE:
-            otp_instance, _ = OTP.objects.get_or_create(user=self.user, otp_type=OTPChoices.LOGIN)
-            otp_instance.generate_otp()
-            otp_instance.save()
-            Communication().send_otp_email(self.user, otp_instance.otp_code)
+            # Check if device is already trusted (no OTP needed)
+            request = self.context.get('request')
+            if request and TrustedDevice.is_device_trusted(self.user, request):
+                logger.info(f"Device is trusted for user {self.user.email}, skipping OTP")
+                # Mark OTP as verified if exists
+                OTP.objects.filter(user=self.user, otp_type=OTPChoices.LOGIN)\
+                    .update(is_verified=True, is_active=False)
+            else:
+                otp_instance, _ = OTP.objects.get_or_create(
+                    user=self.user,
+                    otp_type=OTPChoices.LOGIN
+                )
+                otp_instance.generate_otp()
+                logger.info(f"OTP generated for user {self.user.email}")
+
+                try:
+                    Communication().send_otp_email(
+                        user=self.user,
+                        otp_code=otp_instance.otp,
+                        expiration_minutes=constance_config.OTP_CODE_EXPIRATION
+                    )
+                    logger.info(f"OTP email sent to {self.user.email}")
+                except Exception as e:
+                    logger.error(f"Failed to send OTP email to {self.user.email}: {e}")
+                    # Continue login process even if email fails - user can resend OTP
 
         data['tokens'] = {
             'refresh': str(refresh),

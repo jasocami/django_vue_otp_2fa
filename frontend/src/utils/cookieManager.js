@@ -1,34 +1,62 @@
-export function getAccessTokenExpiration() {
+import Cookies from 'js-cookie';
+
+export default {
+  name: 'cookieManager',
+  transformToHuman(val, t) {
+    if ([undefined, null].includes(val)) return val;
+    if (t === Boolean) return (val.toLowerCase() === 'true');
+    if (t === Number) return (parseInt(val, 10));
+    return val;
+  },
+  getCookieExpiration() {
+    // Return a expiration date 24h from now
     const now = new Date();
-    return new Date(now.getTime() + 60 * 60000 * 1); // 1h
-  }
-  
-  export function getRefreshTokenExpiration() {
-    const now = new Date();
-    return new Date(now.getTime() + 7 * 24 * 60 * 60000); // 7 dias
-  }
-  
-  export function setCookie(name, value, expiration) {
-    let expires = "";
-    if (expiration) {
-      expires = "; expires=" + expiration.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "") + expires + "; path=/; Secure; SameSite=Lax";
-  }
-  
-  export function getCookie(name) {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-      let c = ca[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-  }
-  
-  export function removeCookies() {
-    var Cookies = document.cookie.split(';');
-    for (var i = 0; i < Cookies.length; i++)
-      document.cookie = Cookies[i] + "=;expires=" + new Date(0).toUTCString();
-  }
+    return new Date(now.getTime() + 60 * 60000 * 24);
+  },
+  // cookieAsObject(cookie) {
+  //   return cookie.split(/[;] */).reduce((result, pairStr) => {
+  //     const arr = pairStr.split('=');
+  //     const [key, value] = arr;
+  //     if (arr.length === 2) {
+  //       result[key] = value; // eslint-disable-line no-param-reassign
+  //     }
+  //     return result;
+  //   }, {});
+  // },
+  set(name, value, expiration) {
+    // eslint-disable-next-line
+    if (!expiration) expiration = this.getCookieExpiration();
+    // eslint-disable-next-line
+    expiration = expiration.toUTCString();
+    document.cookie = `${name}=${value}; expires=${expiration}; path=/; Secure; SameSite=Lax;`;
+  },
+  get(name, t = String) {
+    const val = Cookies.get(name);
+    console.log(name, val, t);
+    if (!val) return null;
+    return this.transformToHuman(val, t);
+  },
+  /**
+   * Set OTP verification status cookie
+   * @param {boolean} value - Whether OTP is verified
+   */
+  setOtpVerified(value) {
+    this.set('otp_verified', value ? 'true' : 'false');
+  },
+  /**
+   * Check if OTP has been verified for current session
+   * @returns {boolean} True if OTP is verified
+   */
+  hasOtpVerified() {
+    return this.get('otp_verified') === 'true';
+  },
+  delete(name) {
+    Cookies.delete(name);
+  },
+  deleteAll() {
+    document.cookie.split(';').forEach((c) => {
+      document.cookie = `${c.trim().split('=')[0]}=; expires=Thu, 01 Jan 1970 00:00:00 GMT;`;
+    });
+    localStorage.clear();
+  },
+};

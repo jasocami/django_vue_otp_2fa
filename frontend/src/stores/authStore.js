@@ -2,15 +2,16 @@ import { defineStore } from 'pinia'
 import { coreServices } from '@/utils/coreServices'
 import axios from 'axios';
 import router from '@/router';
-import { getAccessTokenExpiration, getRefreshTokenExpiration, getCookie, setCookie, removeCookies } from '@/utils/cookieManager';
+import cookieManager from '@/utils/cookieManager';
 
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     apiError: null,
     user: null, // getCookie('user'),
-    accessToken: getCookie('accessToken'),
-    refreshToken: getCookie('refreshToken'),
+    accessToken: cookieManager.get('accessToken'),
+    refreshToken: cookieManager.get('refreshToken'),
+    otpVerified: cookieManager.hasOtpVerified(),
     isLoading: false,
     isAppLoaded: false,
     resendOtp: null,
@@ -18,37 +19,41 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     getAccessToken: (state) => state.accessToken,
     getRefreshToken: (state) => state.refreshToken,
+    isOtpVerified: (state) => state.otpVerified,
   },
   actions: {
     resetState() {
       this.user = null;
       this.accessToken = null;
       this.refreshToken = null;
+      this.otpVerified = false;
       this.isAppLoaded = false;
-      removeCookies();
+      cookieManager.deleteAll();
     },
     resetApiError() {
       this.apiError = null;
     },
     setTokens(tokens) {
-      setCookie('accessToken', tokens['access'], getAccessTokenExpiration());
+      cookieManager.set('accessToken', tokens['access']);
       this.accessToken = tokens['access'];
-      setCookie('refreshToken', tokens['refresh'], getRefreshTokenExpiration());
+      cookieManager.set('refreshToken', tokens['refresh']);
       this.refreshToken = tokens['refresh'];
-    },
-    setAccessToken(token) {
-      setCookie('accessToken', token, getAccessTokenExpiration());
-      this.accessToken = token;
     },
     async login(data) {
       try {
         const response = await coreServices().post('/users/login/', data, '');
         this.setTokens(response.data['tokens']);
         this.user = response.data['user'];
-        router.push({name: 'verify_otp'});
+        console.log('response.data.user.otp_verified', response.data.user.otp_verified)
+        cookieManager.setOtpVerified(response.data.user.otp_verified);
+        if (response.data.user.otp_verified === false) {
+          router.push({ name: 'verify_otp' });
+        } else {
+          router.push({ name: 'Home' });
+        }
       } catch (error) {
         this.apiError = error.response.data;
-        console.log(error);
+
         if (error.response && error.response.status === 400) {
           const errorCode = error.response.data.code;
           if (errorCode === 'password_expired') {
@@ -73,6 +78,8 @@ export const useAuthStore = defineStore('auth', {
     async verifyOtp(data) {
       try {
         await coreServices().post('/users/verify-otp/', data);
+        cookieManager.setOtpVerified(true);
+        this.otpVerified = true
         router.push({ name: 'home' });
       } catch (error) {
         console.log(error);
